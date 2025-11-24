@@ -1,0 +1,6 @@
+All Data/
+data/
+*.czi
+*.tiff
+*.zarr
+.DS_Store

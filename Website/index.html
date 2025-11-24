@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Olfactory Data Visualizer</title>
+  <meta name="description" content="Interactive dashboard scaffolding for rabies tracing, double injections, and regional AON datasets." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- AOS Animate on Scroll -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+
+  <!-- D3 & Vega (for future charts) -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+
+<body>
+  <!-- Navigation Bar -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="#top" class="brand">Olfactory DV</a>
+      <div class="nav__links">
+        <a href="#overview">Overview</a>
+        <a href="#datasets">Datasets</a>
+        <a href="#methods">Methods</a>
+      </div>
+      <div class="nav__right">
+        <button id="themeToggle" class="btn btn--ghost" aria-label="Toggle theme">Dark</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header id="top" class="hero">
+    <div class="container grid">
+      <div class="col" data-aos="fade-up">
+        <p class="kicker">Tisya Sharma · Capstone</p>
+        <h1>Olfactory Data Visualizer</h1>
+        <p class="lede">
+          Dashboard for fluorescence‑based circuit tracing and regional expression in the mouse anterior olfactory nucleus (AON).
+        </p>
+        <div class="legend">
+          <span class="dot" style="--c:var(--accent1)"></span> Afferent/Tracing
+          <span class="dot" style="--c:var(--accent2)"></span> Injection/Expression
+          <span class="dot" style="--c:var(--accent3)"></span> Regional Summaries
+        </div>
+      </div>
+
+      <div class="col card" data-aos="fade-up" data-aos-delay="100">
+        <h2 class="card__title"> Filters </h2>
+        <div class="filters">
+          <label>Date Range
+            <input id="dateRange" type="range" min="2018" max="2025" value="2025" />
+            <div class="range-meta"><span>2018</span><span id="dateVal">2025</span></div>
+          </label>
+
+          <label>Genotype
+            <select id="genotypeSelect">
+              <option value="all" selected>All</option>
+              <option value="vglut1">vglut1</option>
+              <option value="vgat">vgat</option>
+            </select>
+          </label>
+
+          <label>Laterality
+            <select id="lateralitySelect">
+              <option value="all" selected>All</option>
+              <option value="bilateral">bilateral</option>
+              <option value="ipsilateral">ipsilateral</option>
+            </select>
+          </label>
+
+          <label>Mouse ID
+            <select id="mouseSelect">
+              <option value="all" selected>All</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="D">D</option>
+              <option value="E">E</option>
+            </select>
+          </label>
+        </div>
+        <p class="help">Filters will sync across tabs and charts (to be wired later).</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Overview -->
+  <section id="overview" class="section">
+    <div class="container narrow" data-aos="fade-up">
+      <p class="kicker">Overview</p>
+      <h2>Project Scope</h2>
+      <p>
+        This dashboard allows for the interpretation and visualization of AON olfactory fluorescence data from the mouse brain:
+        <strong>Rabies Injection</strong> (tracing inputs), <strong>Double Injection</strong> (comparative expression),
+        and <strong>Regional AON</strong> (per‑region fluorescence summaries). Visualizations (TO BE LOADED);
+        each section below includes the 3 criteria that we experimented.
+      </p>
+    </div>
+  </section>
+
+  <!-- Datasets Tabs -->
+  <section id="datasets" class="section section--alt">
+    <div class="container">
+      <div class="section__head" data-aos="fade-up">
+        <div>
+          <p class="kicker">Datasets</p>
+          <h3>Explore by Dataset</h3>
+          <p class="muted">Switch tabs to see dedicated filters, notes, and chart placeholders for each dataset.</p>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs" role="tablist" aria-label="Datasets">
+        <button class="tab is-active" role="tab" aria-selected="true" aria-controls="rabiesTab" id="rabiesTabBtn">Rabies Injection</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="doubleTab" id="doubleTabBtn">Double Injection</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="regionalTab" id="regionalTabBtn">Regional AON</button>
+      </div>
+
+      <!-- Rabies Tab -->
+      <div id="rabiesTab" class="tabpanel is-active" role="tabpanel" aria-labelledby="rabiesTabBtn" data-aos="fade-up">
+        <div class="grid-two">
+          <div class="card">
+            <h4 class="card__title">Rabies Filters (stub)</h4>
+            <div class="filters">
+              <label>Tracing Window (days)
+                <input id="rabiesWindow" type="range" min="1" max="30" value="7" />
+                <div class="range-meta"><span>1</span><span id="rabiesWindowVal">7</span></div>
+              </label>
+              <label>Injection Site
+                <input id="rabiesSite" type="text" placeholder="e.g., AONpE, AONl, etc." />
+              </label>
+            </div>
+            <p class="help">Wire these controls to rabies‑specific queries in your API.</p>
+          </div>
+          <div class="card">
+            <h4 class="card__title">Notes</h4>
+            <ul class="list">
+              <li>One‑synapse retrograde tracing; ensure metadata includes injection coordinates and survival time.</li>
+              <li>Placeholder charts below will host afferent density maps and source region compositions.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="viz-stack">
+          <div id="rabies_overview" class="viz-card" aria-label="Rabies Overview Chart Placeholder"></div>
+          <p class="caption">Figure R1. Placeholder — overview of traced inputs by source region.</p>
+
+          <div id="rabies_timeseries" class="viz-card" aria-label="Rabies Time Series Placeholder"></div>
+          <p class="caption">Figure R2. Placeholder — time course / survival‑time comparison.</p>
+        </div>
+      </div>
+
+      <!-- Double Injection Tab -->
+      <div id="doubleTab" class="tabpanel" role="tabpanel" aria-labelledby="doubleTabBtn" hidden data-aos="fade-up">
+        <div class="grid-two">
+          <div class="card">
+            <h4 class="card__title">Double Injection Filters (stub)</h4>
+            <div class="filters">
+              <label>Condition A
+                <input id="doubleA" type="text" placeholder="e.g., vglut1 ipsi" />
+              </label>
+              <label>Condition B
+                <input id="doubleB" type="text" placeholder="e.g., vgat contra" />
+              </label>
+            </div>
+            <p class="help">Use these to drive differential expression and matched region comparisons.</p>
+          </div>
+          <div class="card">
+            <h4 class="card__title">Notes</h4>
+            <ul class="list">
+              <li>Supports paired comparisons; expect side‑by‑side plots and delta views.</li>
+              <li>Ensure consistent normalization and background subtraction across injections.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="viz-stack">
+          <div id="double_compare" class="viz-card" aria-label="Double Injection Compare Placeholder"></div>
+          <p class="caption">Figure D1. Placeholder — side‑by‑side expression comparison of conditions A vs B.</p>
+
+          <div id="double_delta" class="viz-card" aria-label="Double Injection Delta Placeholder"></div>
+          <p class="caption">Figure D2. Placeholder — Δ expression across selected brain regions.</p>
+        </div>
+      </div>
+
+      <!-- Regional AON Tab -->
+      <div id="regionalTab" class="tabpanel" role="tabpanel" aria-labelledby="regionalTabBtn" hidden data-aos="fade-up">
+        <div class="grid-two">
+          <div class="card">
+            <h4 class="card__title">Regional AON Filters (stub)</h4>
+            <div class="filters">
+              <label>Region Search
+                <input id="regionSearch" type="search" placeholder="Type to filter brain regions..." />
+              </label>
+              <label>Aggregation
+                <select id="aggSelect">
+                  <option value="mean" selected>Average (recommended)</option>
+                  <option value="sum">Sum</option>
+                  <option value="median">Median</option>
+                </select>
+              </label>
+            </div>
+            <p class="help">Connect to API endpoint that aggregates Region pixels by region and metadata.</p>
+          </div>
+          <div class="card">
+            <h4 class="card__title">Notes</h4>
+            <ul class="list">
+              <li>Default aggregation is average of <em>Region pixels</em> per region across mice.</li>
+              <li>Consider toggles for hemisphere, layer, and subregion labels.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="viz-stack">
+          <div id="regional_bar" class="viz-card" aria-label="Regional Bar Placeholder"></div>
+          <p class="caption">Figure A1. Placeholder — bar chart of average Region pixels per selected regions.</p>
+
+          <div id="regional_heatmap" class="viz-card" aria-label="Regional Heatmap Placeholder"></div>
+          <p class="caption">Figure A2. Placeholder — region × condition heatmap.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Methods -->
+  <section id="methods" class="section">
+    <div class="container grid-two" data-aos="fade-up">
+      <div>
+        <p class="kicker">Methods</p>
+        <h4>Preprocessing</h4>
+        <ul class="list">
+          <li>Standardize column names; coerce numeric features; drop unused columns (e.g., Load %, Area unit).</li>
+          <li>Compute averages of <strong>Region pixels</strong> per brain region across mice by default.</li>
+          <li>Expose API endpoints for each dataset; include query params for filters above.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Tech Stack</h4>
+        <ul class="list">
+          <li>Frontend: vanilla HTML/CSS/JS with Vega‑Lite & D3 stubs.</li>
+          <li>Backend: FastAPI/Flask + PostgreSQL schemas per dataset group.</li>
+          <li>Design: minimal, Inter typeface, soft cards, accent palette.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      © 2025 Northeastern University · <span class="accent2">Olfactory Data Visualizer</span>
+    </div>
+  </footer>
+
+  <!-- Back to top -->
+  <button id="toTop" class="to-top">Top</button>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
