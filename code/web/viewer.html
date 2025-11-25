@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Universal Brain Viewer</title>
+  <style>
+    body { margin: 0; height: 100vh; background: #050505; font-family: monospace; overflow: hidden; color: #0f0; }
+    #log { position: absolute; top: 10px; left: 10px; z-index: 100; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 4px; pointer-events: none; max-width: 60%; }
+    #viewer-root { width: 100%; height: 100%; }
+    .error { color: #ff5555; }
+    .success { color: #55ff55; }
+  </style>
+</head>
+<body>
+  <div id="log">System Boot...<br></div>
+  <div id="viewer-root"></div>
+
+  <script type="module">
+    function print(msg, type="normal") {
+      const el = document.getElementById('log');
+      const color = type === 'error' ? '#ff5555' : (type === 'success' ? '#55ff55' : '#cccccc');
+      el.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+      console.log(msg);
+    }
+
+    async function loadLibrary() {
+      // List of mirrors to try (Modern ESM CDNs)
+      const mirrors = [
+        'https://esm.sh/viv@0.13.3',
+        'https://cdn.skypack.dev/viv'
+      ];
+
+      for (const url of mirrors) {
+        print(`Attempting to download engine from: ${url}...`);
+        try {
+          // Dynamic import - catches errors if download fails
+          const module = await import(url);
+          if (module && module.createViewer) {
+             print("Engine Loaded Successfully!", "success");
+             return module;
+          }
+        } catch (e) {
+          print(`Failed to load from ${url}: ${e.message}`, "error");
+        }
+      }
+      throw new Error("All mirrors failed. Check internet connection.");
+    }
+
+    // MAIN STARTUP
+    (async () => {
+      try {
+        // 1. Load the Brain Engine
+        const Viv = await loadLibrary();
+
+        // 2. Get the Data URL
+        const params = new URLSearchParams(window.location.search);
+        const imageUrl = params.get('url');
+
+        if (!imageUrl) {
+          throw new Error("No Data URL provided in link.");
+        }
+
+        print(`Target Data: ...${imageUrl.split('/').pop()}`);
+
+        // 3. Verify Data Exists (Pre-check)
+        print("Pinging local server for data...");
+        const check = await fetch(imageUrl + "/.zgroup");
+        if (!check.ok) throw new Error(`Server returned ${check.status} (Is serve.py running?)`);
+        print("Data found on disk.", "success");
+
+        // 4. Render
+        print("Rendering 3D Volume...");
+        await Viv.createViewer({
+          source: imageUrl,
+          root: document.getElementById('viewer-root'),
+          theme: 'dark',
+          height: '100vh',
+          width: '100vw',
+          // BRIGHTNESS CONTROL:
+          // Increase 1000 -> Darker
+          // Decrease 1000 -> Brighter
+          contrastLimits: [0, 1000], 
+          loaderOptions: { load: true }
+        });
+        
+        print("READY.", "success");
+
+      } catch (err) {
+        print(`CRITICAL FAILURE: ${err.message}`, "error");
+      }
+    })();
+  </script>
+</body>
+</html>
