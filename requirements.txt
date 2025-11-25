@@ -1,0 +1,22 @@
+# Data Handling
+pandas
+numpy
+scipy
+
+# Image Processing (The heavy lifters)
+zarr
+ome-zarr
+tifffile
+scikit-image
+dask
+
+# Neuroscience Standards
+pynwb
+hdmf
+
+# Database
+psycopg2-binary
+sqlalchemy
+
+# General
+tqdm  # Progress bars are essential for large conversions
