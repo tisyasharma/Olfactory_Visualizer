@@ -14,7 +14,7 @@ def init_database():
     engine = get_engine()
     schema_path = os.path.join("code", "database", "schema.sql")
     
-    print(f"Readling schema from: {schema_path}")
+    print(f"Reading schema from: {schema_path}")
     
     try:
         with open(schema_path, 'r') as f:
@@ -24,7 +24,7 @@ def init_database():
             # Execute the entire SQL script
             conn.execute(text(sql_commands))
             conn.commit()
-            print("✅ SUCCESS: Tables created! (subjects, brain_regions, region_counts)")
+            print("✅ SUCCESS: Tables created! (public imaging + rna schema)")
             
     except FileNotFoundError:
         print("❌ ERROR: schema.sql not found. Did you create it in code/database/?")

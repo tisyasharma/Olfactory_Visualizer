@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: capstone
+Version: 0.0.1
+Summary: Olfactory data ETL and web assets
+Requires-Python: >=3.9
+License-File: LICENSE
+Requires-Dist: pandas
+Requires-Dist: sqlalchemy
+Requires-Dist: psycopg2-binary
+Requires-Dist: numpy
+Requires-Dist: ome-zarr
+Requires-Dist: imageio
+Requires-Dist: dask
+Requires-Dist: zarr
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: pydantic
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Dynamic: license-file

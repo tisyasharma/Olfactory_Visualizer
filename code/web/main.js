@@ -8,21 +8,16 @@ window.addEventListener('scroll', () => {
 });
 toTop.addEventListener('click', () => window.scrollTo({ top:0, behavior:'smooth' }));
 
-// Theme toggle
-const themeToggle = document.getElementById('themeToggle');
-let dark = false;
-themeToggle.addEventListener('click', () => {
-  dark = !dark;
-  document.documentElement.classList.toggle('dark', dark);
-  themeToggle.textContent = dark ? 'Light' : 'Dark';
-});
-
 // Global filters (stub wiring for later API calls)
 const dateRange = document.getElementById('dateRange');
 const dateVal = document.getElementById('dateVal');
 const genotypeSelect = document.getElementById('genotypeSelect');
 const lateralitySelect = document.getElementById('lateralitySelect');
 const mouseSelect = document.getElementById('mouseSelect');
+const scrnaSampleSelect = document.getElementById('scrnaSampleSelect');
+const scrnaClusterSelect = document.getElementById('scrnaClusterSelect');
+const fileSelect = document.getElementById('fileSelect');
+const fileDetails = document.getElementById('fileDetails');
 
 dateRange?.addEventListener('input', () => { dateVal.textContent = dateRange.value; syncGlobalFilters(); });
 genotypeSelect?.addEventListener('change', syncGlobalFilters);
@@ -30,21 +25,14 @@ lateralitySelect?.addEventListener('change', syncGlobalFilters);
 mouseSelect?.addEventListener('change', syncGlobalFilters);
 
 function syncGlobalFilters(){
-  const params = {
-    maxYear: +dateRange.value,
-    genotype: genotypeSelect.value,
-    laterality: lateralitySelect.value,
-    mouse: mouseSelect.value
-  };
-  // TODO: forward to per-tab updaters once charts are attached
-  // e.g., updateRabiesCharts(params); updateDoubleCharts(params); updateRegionalCharts(params);
+  // charts removed for now; placeholder hook for future visuals
 }
 
 // Tabs logic
 const tabs = [
   { btn: 'rabiesTabBtn', panel: 'rabiesTab' },
   { btn: 'doubleTabBtn', panel: 'doubleTab' },
-  { btn: 'regionalTabBtn', panel: 'regionalTab' }
+  { btn: 'scrnaTabBtn', panel: 'scrnaTab' }
 ];
 
 tabs.forEach(({btn, panel}) => {
@@ -81,6 +69,8 @@ const accent1 = getComputedStyle(document.documentElement).getPropertyValue('--a
 const accent2 = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim();
 const accent3 = getComputedStyle(document.documentElement).getPropertyValue('--accent3').trim();
 
+const API = 'http://localhost:8000';
+
 function vlTheme(){
   return {
     background: 'transparent',
@@ -97,14 +87,90 @@ async function embedVL(targetId, spec){
 }
 
 // Placeholder updaters (no data yet)
-async function updateRabiesCharts(params){ /* TODO */ }
-async function updateDoubleCharts(params){ /* TODO */ }
-async function updateRegionalCharts(params){ /* TODO */ }
+function normalizeHemisphere(val){
+  if(!val || val === 'all') return null;
+  if(['left','right','bilateral'].includes(val)) return val;
+  return null;
+}
+
+// Data fetchers for future charts (kept for reuse)
+async function fetchFluorSummary(experimentType, hemisphere, subjectId, regionId){
+  const qs = new URLSearchParams();
+  if(experimentType) qs.append('experiment_type', experimentType);
+  if(hemisphere) qs.append('hemisphere', hemisphere);
+  if(subjectId && subjectId !== 'all') qs.append('subject_id', subjectId);
+  if(regionId) qs.append('region_id', regionId);
+  qs.append('limit', 200);
+  return fetchJson(`${API}/fluor/summary?${qs.toString()}`);
+}
+
+async function updateRabiesCharts(params){
+  const hemi = normalizeHemisphere(params?.laterality);
+  try{
+    const data = await fetchFluorSummary('rabies', hemi, params?.mouse);
+    const values = data.map(d => ({
+      region: d.region_name,
+      load: d.load_avg ?? 0,
+      pixels: d.region_pixels_avg ?? 0
+    })).sort((a,b) => b.load - a.load).slice(0, 20);
+    const spec = {
+      data: { values },
+      mark: { type:'bar', cornerRadiusEnd:3 },
+      encoding: {
+        x: { field:'load', type:'quantitative', title:'Avg load', axis:{grid:false} },
+        y: { field:'region', type:'nominal', sort:'-x', title:'Region', axis:{labelLimit:180} },
+        color: { field:'load', type:'quantitative', legend:null, scale:{scheme:'blues'} },
+        tooltip: [
+          {field:'region', type:'nominal'},
+          {field:'load', type:'quantitative', title:'Avg load', format:'.4f'},
+          {field:'pixels', type:'quantitative', title:'Avg pixels', format:'.0f'}
+        ]
+      }
+    };
+    embedVL('rabies_load_chart', spec);
+  }catch(err){
+    console.warn('Rabies chart failed', err);
+    embedVL('rabies_load_chart', { data:{values:[]}, mark:'bar', encoding:{} });
+  }
+}
+
+async function updateDoubleCharts(params){
+  const hemi = normalizeHemisphere(params?.laterality);
+  try{
+    const data = await fetchFluorSummary('double_injection', hemi, params?.mouse);
+    const values = data.map(d => ({
+      region: d.region_name,
+      pixels: d.region_pixels_avg ?? 0,
+      load: d.load_avg ?? 0
+    })).sort((a,b) => b.pixels - a.pixels).slice(0, 20);
+    const spec = {
+      data: { values },
+      mark: 'bar',
+      encoding: {
+        x: { field:'pixels', type:'quantitative', title:'Avg pixels' },
+        y: { field:'region', type:'nominal', sort:'-x', title:'Region' },
+        color: { field:'pixels', type:'quantitative', legend:null }
+      }
+    };
+    embedVL('double_compare', spec);
+  }catch(err){
+    console.warn('Double chart failed', err);
+    embedVL('double_compare', { data:{values:[]}, mark:'bar', encoding:{} });
+  }
+}
+
+async function updateRegionalCharts(params){
+  // Placeholder for other datasets; keep empty for now
+}
 
 // Init
 (function init(){
   // open first tab by default
   activateTab('rabiesTabBtn', 'rabiesTab');
+  loadSubjects();
+  loadSamples();
+  loadFiles();
+  syncGlobalFilters();
 })();
 
 /* === Upload Center Logic === */
@@ -121,6 +187,8 @@ const uploadMouse = document.getElementById('uploadMouse');
 const uploadDate = document.getElementById('uploadDate');
 const uploadProtocol = document.getElementById('uploadProtocol');
 const queue = [];
+const IMAGE_EXT = ['.png','.jpg','.jpeg','.tif','.tiff','.ome.tif','.ome.tiff','.zarr','.ome.zarr'];
+const CSV_EXT = ['.csv'];
 
 browseLink?.addEventListener('click', () => fileInput?.click());
 fileInput?.addEventListener('change', (e) => addFiles([...e.target.files]));
@@ -137,12 +205,25 @@ dropzone?.addEventListener('drop', (e) => {
 });
 
 function addFiles(files){
+  const rejected = [];
   files.forEach(f => {
+    const name = (f.name || '').toLowerCase();
+    const isCsv = CSV_EXT.some(ext => name.endsWith(ext));
+    const isImage = IMAGE_EXT.some(ext => name.endsWith(ext));
+    if(!(isCsv || isImage)){
+      rejected.push(f.name || 'unknown');
+      return;
+    }
     if(!queue.find(q => q.name === f.name && q.size === f.size)){
       queue.push(f);
     }
   });
   renderFileList();
+  if(rejected.length){
+    setWarning(`Rejected unsupported file types: ${rejected.join(', ')}`);
+  }else{
+    setWarning('');
+  }
 }
 
 function renderFileList(){
@@ -165,12 +246,24 @@ fileList?.addEventListener('click', (e) => {
 });
 
 clearBtn?.addEventListener('click', () => {
-  queue.splice(0, queue.length);
-  renderFileList();
-  setWarning('');
+  resetUploadForm();
 });
 
-registerBtn?.addEventListener('click', () => {
+function updateValueState(el){
+  if(!el) return;
+  if(el.value && el.value.trim() !== ''){
+    el.classList.add('has-value');
+  }else{
+    el.classList.remove('has-value');
+  }
+}
+
+[uploadModality, uploadDate].forEach(el => {
+  el?.addEventListener('change', () => updateValueState(el));
+  updateValueState(el);
+});
+
+registerBtn?.addEventListener('click', async () => {
   const modality = uploadModality?.value;
   const mouse = (uploadMouse?.value || '').trim();
   if(!modality || !mouse){
@@ -181,10 +274,33 @@ registerBtn?.addEventListener('click', () => {
     setWarning('Add at least one file for this mouse experiment.');
     return;
   }
-  registerExperiment(modality, mouse, uploadDate?.value || null, uploadProtocol?.value || null, queue).catch(err => {
+  const hemiVal = lateralitySelect?.value;
+  const hemisphere = (!hemiVal || hemiVal === 'all') ? 'bilateral' : hemiVal;
+  const experimentType = modality === 'rabies' ? 'rabies' : 'double_injection';
+  const sessionId = (uploadProtocol?.value && uploadProtocol.value.trim())
+    ? uploadProtocol.value.trim().replace(/\s+/g, '-').toLowerCase()
+    : `ses-${modality}`;
+
+  const csvFiles = queue.filter(f => f.name.toLowerCase().endsWith('.csv'));
+  const imageFiles = queue.filter(f => !f.name.toLowerCase().endsWith('.csv'));
+
+  try{
+    if(imageFiles.length){
+      await uploadMicroscopy(modality, mouse, sessionId, hemisphere, imageFiles);
+    }
+    if(csvFiles.length){
+      await uploadRegionCounts(experimentType, mouse, sessionId, hemisphere, csvFiles);
+    }
+    setStatus(`Uploaded ${imageFiles.length} image(s) and ${csvFiles.length} CSV(s) for ${mouse} -> ${sessionId}`);
+    queue.splice(0, queue.length);
+    renderFileList();
+    loadSubjects();
+    loadSamples();
+    loadFiles();
+  }catch(err){
     console.error(err);
-    setWarning('Could not reach backend API at http://localhost:8000. Is it running?');
-  });
+    setWarning('Upload failed: ' + err.message);
+  }
 });
 
 function setStatus(msg){
@@ -193,8 +309,8 @@ function setStatus(msg){
 }
 function setWarning(msg){
   if(!msg){ uploadWarning.hidden = true; return; }
-  if(uploadWarning){ uploadWarning.textContent = msg; uploadWarning.hidden = false; }
-  if(uploadStatus){ uploadStatus.hidden = true; }
+    if(uploadWarning){ uploadWarning.textContent = msg; uploadWarning.hidden = false; }
+    if(uploadStatus){ uploadStatus.hidden = true; }
 }
 
 function prettyBytes(bytes){
@@ -205,36 +321,191 @@ function prettyBytes(bytes){
   return bytes.toFixed(1) + ' ' + units[u];
 }
 
-// Calls your FastAPI backend (same shape as earlier)
-async function registerExperiment(modality, mouse, date_run, protocol, files){
-  const API = 'http://localhost:8000';
-  const payload = { modality, mouse_id: mouse, date_run: date_run || null, protocol: protocol || null };
-  const expRes = await fetch(API + '/experiments', {
+async function uploadMicroscopy(modality, mouse, sessionId, hemisphere, files){
+  const form = new FormData();
+  const subj = mouse.startsWith('sub-') ? mouse : `sub-${mouse}`;
+  form.append('subject_id', subj);
+  form.append('session_id', sessionId || `ses-${modality}`);
+  form.append('hemisphere', hemisphere || 'bilateral');
+  form.append('pixel_size_um', 0.5);
+  form.append('experiment_type', modality === 'rabies' ? 'rabies' : 'double_injection');
+  files.forEach(f => form.append('files', f, f.name));
+
+  const res = await fetch(`${API}/upload/microscopy`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: form
   });
-  if(!expRes.ok){
-    const t = await expRes.text();
-    throw new Error('Experiment create failed: ' + t);
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error(t || 'Upload failed');
   }
-  const exp = await expRes.json();
-  if(files && files.length){
-    const form = new FormData();
-    files.forEach(f => form.append('files', f, f.name));
-    const uploadRes = await fetch(API + `/experiments/${exp.exp_id}/files`, {
-      method: 'POST',
-      body: form
-    });
-    if(!uploadRes.ok){
-      const t = await uploadRes.text();
-      throw new Error('File upload failed: ' + t);
-    }
-    const saved = await uploadRes.json();
-    setStatus(`Registered ${saved.length} file(s) for ${mouse} (${modality}).`);
-  }else{
-    setStatus(`Registered 0 files for ${mouse} (${modality}).`);
-  }
+  const data = await res.json();
+  setStatus(`Uploaded ${files.length} microscopy file(s) for ${subj} -> ${sessionId}`);
+  return data;
+}
+
+function resetUploadForm(){
   queue.splice(0, queue.length);
   renderFileList();
+  [uploadModality, uploadMouse, uploadDate, uploadProtocol].forEach(el => {
+    if(!el) return;
+    if(el.tagName === 'SELECT'){ el.selectedIndex = 0; }
+    else { el.value = ''; }
+    el.classList.remove('has-value');
+  });
+  if(fileInput){ fileInput.value = ''; }
+  setWarning('');
+  if(uploadStatus){ uploadStatus.hidden = true; uploadStatus.textContent = ''; }
+}
+
+async function uploadRegionCounts(experimentType, mouse, sessionId, hemisphere, files){
+  const form = new FormData();
+  const subj = mouse.startsWith('sub-') ? mouse : `sub-${mouse}`;
+  form.append('subject_id', subj);
+  if(sessionId){ form.append('session_id', sessionId); }
+  form.append('hemisphere', hemisphere || 'bilateral');
+  form.append('experiment_type', experimentType);
+  files.forEach(f => form.append('files', f, f.name));
+
+  const res = await fetch(`${API}/upload/region-counts`, {
+    method: 'POST',
+    body: form
+  });
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error(t || 'Upload failed');
+  }
+  const data = await res.json();
+  setStatus(`Ingested ${data.rows_ingested || 0} row(s) from ${files.length} CSV(s) for ${subj}`);
+  return data;
+}
+
+async function fetchJson(url){
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function loadSubjects(){
+  try{
+    const subjects = await fetchJson(`${API}/subjects`);
+    if(mouseSelect){
+      mouseSelect.innerHTML = '<option value="all" selected>All</option>' +
+        subjects.map(s => `<option value="${s.subject_id}">${s.subject_id}</option>`).join('');
+    }
+    if(uploadMouse && uploadMouse.tagName === 'SELECT'){
+      uploadMouse.innerHTML = '<option value="" disabled selected>Select mouse</option>' +
+        subjects.map(s => `<option value="${s.subject_id}">${s.subject_id}</option>`).join('');
+    }
+  }catch(err){
+    console.warn('Failed to load subjects', err);
+  }
+}
+
+async function loadSamples(){
+  try{
+    const samples = await fetchJson(`${API}/scrna/samples`);
+    if(scrnaSampleSelect){
+      scrnaSampleSelect.innerHTML = '<option value="" disabled selected>Select sample</option>' +
+        samples.map(s => `<option value="${s.sample_id}">${s.sample_id}</option>`).join('');
+    }
+  }catch(err){
+    console.warn('Failed to load scRNA samples', err);
+  }
+}
+
+async function loadFiles(){
+  try{
+    const files = await fetchJson(`${API}/files`);
+    if(fileSelect){
+      fileSelect.innerHTML = '<option value="" disabled selected>Select file</option>' +
+        files.map(f => {
+          const labelParts = [f.subject_id || '', f.session_id || '', f.hemisphere || '', f.run ? `run-${f.run}` : ''].filter(Boolean);
+          const label = labelParts.join(' • ') || f.path;
+          return `<option value="${encodeURIComponent(f.path)}" data-path="${encodeURIComponent(f.path)}" data-session="${f.session_id || ''}" data-subject="${f.subject_id || ''}" data-hemisphere="${f.hemisphere || ''}">${label}</option>`;
+        }).join('');
+      if(files.length && fileSelect.options.length > 1){
+        fileSelect.selectedIndex = 1;
+        renderFileDetails(fileSelect.options[fileSelect.selectedIndex]);
+      }
+    }
+  }catch(err){
+    console.warn('Failed to load files', err);
+  }
+}
+
+function renderFileDetails(option){
+  if(!option || !fileDetails) return;
+  const path = decodeURIComponent(option.getAttribute('data-path') || '');
+  const sess = option.getAttribute('data-session') || '';
+  const subj = option.getAttribute('data-subject') || '';
+  const hemi = option.getAttribute('data-hemisphere') || '';
+  fileDetails.innerHTML = `<strong>Path:</strong> ${path}<br><strong>Subject:</strong> ${subj}<br><strong>Session:</strong> ${sess}<br><strong>Hemisphere:</strong> ${hemi || 'bilateral'}`;
+  fileDetails.hidden = false;
+}
+
+fileSelect?.addEventListener('change', (e) => {
+  renderFileDetails(e.target.options[e.target.selectedIndex]);
+});
+
+scrnaSampleSelect?.addEventListener('change', async () => {
+  const sample = scrnaSampleSelect.value;
+  try{
+    const clusters = await fetchJson(`${API}/scrna/clusters?sample_id=${encodeURIComponent(sample)}`);
+    if(scrnaClusterSelect){
+      scrnaClusterSelect.innerHTML = '<option value="" disabled selected>Select cluster</option>' +
+        clusters.map(c => `<option value="${c.cluster_id}">${c.cluster_id} (${c.n_cells || 0} cells)</option>`).join('');
+    }
+    updateScrnaBar(clusters);
+    updateScrnaHeatmap(sample, scrnaClusterSelect.value || null);
+  }catch(err){
+    console.warn('Failed to load clusters', err);
+  }
+});
+
+scrnaClusterSelect?.addEventListener('change', () => {
+  const sample = scrnaSampleSelect.value;
+  const cluster = scrnaClusterSelect.value;
+  updateScrnaHeatmap(sample, cluster);
+});
+
+function updateScrnaBar(clusters){
+  if(!clusters || !clusters.length){
+    embedVL('scrna_bar', { data:{values:[]}, mark:'bar', encoding:{} });
+    return;
+  }
+  const values = clusters.map(c => ({ cluster: c.cluster_id, cells: c.n_cells || 0 }));
+  const spec = {
+    data: { values },
+    mark: 'bar',
+    encoding: {
+      x: { field: 'cluster', type: 'nominal', sort: null, title: 'Cluster' },
+      y: { field: 'cells', type: 'quantitative', title: 'Cells' },
+      color: { field: 'cluster', type: 'nominal', legend: null }
+    }
+  };
+  embedVL('scrna_bar', spec);
+}
+
+async function updateScrnaHeatmap(sample, cluster){
+  if(!sample || !cluster){
+    embedVL('scrna_heatmap', { data:{values:[]}, mark:'rect', encoding:{} });
+    return;
+  }
+  try{
+    const markers = await fetchJson(`${API}/scrna/markers?sample_id=${encodeURIComponent(sample)}&cluster_id=${encodeURIComponent(cluster)}`);
+    const spec = {
+      data: { values: markers },
+      mark: 'rect',
+      encoding: {
+        x: { field: 'gene', type: 'nominal', sort: null, title: 'Gene' },
+        y: { field: 'cluster_id', type: 'nominal', title: 'Cluster' },
+        color: { field: 'logfc', type: 'quantitative', title: 'logFC' }
+      }
+    };
+    embedVL('scrna_heatmap', spec);
+  }catch(err){
+    console.warn('Failed to load markers', err);
+    embedVL('scrna_heatmap', { data:{values:[]}, mark:'rect', encoding:{} });
+  }
 }

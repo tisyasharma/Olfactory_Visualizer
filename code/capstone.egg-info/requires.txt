@@ -1,0 +1,14 @@
+pandas
+sqlalchemy
+psycopg2-binary
+numpy
+ome-zarr
+imageio
+dask
+zarr
+fastapi
+uvicorn
+pydantic
+
+[dev]
+pytest

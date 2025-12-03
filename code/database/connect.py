@@ -2,13 +2,15 @@
 File responsible for connecting the Postgres server to the Python Client.
 Now modularized so other scripts (like etl.py) can import the connection.
 '''
+import os
 import sys
 from sqlalchemy import create_engine, text
 
 # CONNECTION SETTINGS
 # Since you are on localhost with your user, this URL is correct based on your previous file.
 # If you ever add a password, it would look like: tisyasharma:password@localhost...
-DB_URL = "postgresql+psycopg2://tisyasharma@localhost:5432/murthy_db"
+# Prefer env override so dev/prod can differ without code changes
+DB_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://tisyasharma@localhost:5432/murthy_db")
 
 def get_engine():
     """Creates and returns a database engine."""

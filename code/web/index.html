@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="/code/web/favicon.ico" />
+  <link rel="shortcut icon" href="/code/web/favicon.ico" />
 
   <!-- AOS Animate on Scroll -->
   <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
@@ -30,11 +32,7 @@
         <a href="#datasets">Datasets</a>
         <a href="#upload">Upload</a>
         <a href="#methods">Methods</a>
-      </div>
-      <div class="nav__right">
-        <button id="themeToggle" class="btn btn--ghost" aria-label="Toggle theme">Dark</button>
-      </div>
-    </div>
+      </div>    </div>
   </nav>
 
   <!-- Hero -->
@@ -121,115 +119,27 @@
       <div class="tabs" role="tablist" aria-label="Datasets">
         <button class="tab is-active" role="tab" aria-selected="true" aria-controls="rabiesTab" id="rabiesTabBtn">Rabies Injection</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="doubleTab" id="doubleTabBtn">Double Injection</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="regionalTab" id="regionalTabBtn">Regional AON</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="scrnaTab" id="scrnaTabBtn">scRNA-seq</button>
       </div>
 
       <!-- Rabies Tab -->
       <div id="rabiesTab" class="tabpanel is-active" role="tabpanel" aria-labelledby="rabiesTabBtn" data-aos="fade-up">
-        <div class="grid-two">
-          <div class="card">
-            <h4 class="card__title">Rabies Filters (stub)</h4>
-            <div class="filters">
-              <label>Tracing Window (days)
-                <input id="rabiesWindow" type="range" min="1" max="30" value="7" />
-                <div class="range-meta"><span>1</span><span id="rabiesWindowVal">7</span></div>
-              </label>
-              <label>Injection Site
-                <input id="rabiesSite" type="text" placeholder="e.g., AONpE, AONl, etc." />
-              </label>
-            </div>
-            <p class="help">Wire these controls to rabies‑specific queries in your API.</p>
-          </div>
-          <div class="card">
-            <h4 class="card__title">Notes</h4>
-            <ul class="list">
-              <li>One‑synapse retrograde tracing; ensure metadata includes injection coordinates and survival time.</li>
-              <li>Placeholder charts below will host afferent density maps and source region compositions.</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="viz-stack">
-          <iframe 
-            id="brain-frame"
-            src="viewer.html?url=http://localhost:8000/data/raw_bids/sub-dbl01/ses-01/micr/sub-dbl01_ses-01_sample-brain_stain-native_run-01_omero.zarr"
-            style="width: 100%; height: 500px; border: none; border-radius: 12px; background: black;"
-            allowfullscreen>
-          </iframe>
-          <p class="caption">Figure R1. Placeholder — overview of traced inputs by source region.</p>
-
-          <div id="rabies_timeseries" class="viz-card" aria-label="Rabies Time Series Placeholder"></div>
-          <p class="caption">Figure R2. Placeholder — time course / survival‑time comparison.</p>
+        <div class="viz-holder">
+          <div class="viz-holder__title">Dataset visualization</div>
         </div>
       </div>
 
       <!-- Double Injection Tab -->
       <div id="doubleTab" class="tabpanel" role="tabpanel" aria-labelledby="doubleTabBtn" hidden data-aos="fade-up">
-        <div class="grid-two">
-          <div class="card">
-            <h4 class="card__title">Double Injection Filters (stub)</h4>
-            <div class="filters">
-              <label>Condition A
-                <input id="doubleA" type="text" placeholder="e.g., vglut1 ipsi" />
-              </label>
-              <label>Condition B
-                <input id="doubleB" type="text" placeholder="e.g., vgat contra" />
-              </label>
-            </div>
-            <p class="help">Use these to drive differential expression and matched region comparisons.</p>
-          </div>
-          <div class="card">
-            <h4 class="card__title">Notes</h4>
-            <ul class="list">
-              <li>Supports paired comparisons; expect side‑by‑side plots and delta views.</li>
-              <li>Ensure consistent normalization and background subtraction across injections.</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="viz-stack">
-          <div id="double_compare" class="viz-card" aria-label="Double Injection Compare Placeholder"></div>
-          <p class="caption">Figure D1. Placeholder — side‑by‑side expression comparison of conditions A vs B.</p>
-
-          <div id="double_delta" class="viz-card" aria-label="Double Injection Delta Placeholder"></div>
-          <p class="caption">Figure D2. Placeholder — Δ expression across selected brain regions.</p>
+        <div class="viz-holder">
+          <div class="viz-holder__title">Dataset visualization</div>
         </div>
       </div>
 
       <!-- Regional AON Tab -->
-      <div id="regionalTab" class="tabpanel" role="tabpanel" aria-labelledby="regionalTabBtn" hidden data-aos="fade-up">
-        <div class="grid-two">
-          <div class="card">
-            <h4 class="card__title">Regional AON Filters (stub)</h4>
-            <div class="filters">
-              <label>Region Search
-                <input id="regionSearch" type="search" placeholder="Type to filter brain regions..." />
-              </label>
-              <label>Aggregation
-                <select id="aggSelect">
-                  <option value="mean" selected>Average (recommended)</option>
-                  <option value="sum">Sum</option>
-                  <option value="median">Median</option>
-                </select>
-              </label>
-            </div>
-            <p class="help">Connect to API endpoint that aggregates Region pixels by region and metadata.</p>
-          </div>
-          <div class="card">
-            <h4 class="card__title">Notes</h4>
-            <ul class="list">
-              <li>Default aggregation is average of <em>Region pixels</em> per region across mice.</li>
-              <li>Consider toggles for hemisphere, layer, and subregion labels.</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="viz-stack">
-          <div id="regional_bar" class="viz-card" aria-label="Regional Bar Placeholder"></div>
-          <p class="caption">Figure A1. Placeholder — bar chart of average Region pixels per selected regions.</p>
-
-          <div id="regional_heatmap" class="viz-card" aria-label="Regional Heatmap Placeholder"></div>
-          <p class="caption">Figure A2. Placeholder — region × condition heatmap.</p>
+      <div id="scrnaTab" class="tabpanel" role="tabpanel" aria-labelledby="scrnaTabBtn" hidden data-aos="fade-up">
+        <div class="viz-holder">
+          <div class="viz-holder__title">Dataset visualization</div>
         </div>
       </div>
     </div>
@@ -238,20 +148,26 @@
 
 <!-- Upload (full system) -->
 <section id="upload" class="section">
-  <div class="container grid-two" data-aos="fade-up">
-    <div class="card">
-      <h3 class="card__title">Upload Center</h3>
-      <div class="filters">
+  <div class="container" data-aos="fade-up">
+    <div class="section__head">
+      <div>
+        <p class="kicker">Uploads</p>
+        <h3>Upload Center</h3>
+      </div>
+    </div>
+    <div class="card upload-card">
+      <div class="upload-grid">
         <label>Modality
           <select id="uploadModality">
-            <option value="rabies">Rabies</option>
+            <option value="" disabled selected>Select modality</option>
+            <option value="rabies">Rabies Injection</option>
             <option value="double_injection">Double Injection</option>
-            <option value="regional_aon">Regional AON</option>
-            <option value="scrnaseq">scRNA-seq PCA</option>
+            <option value="regional_aon">Subregional Injection</option>
+            <option value="scrnaseq">RNA Sequencing Data</option>
           </select>
         </label>
         <label>Mouse ID
-          <input id="uploadMouse" type="text" placeholder="e.g., A / B / D / E" />
+          <input id="uploadMouse" type="text" placeholder="e.g., A / B / C ..." />
         </label>
         <label>Date Run
           <input id="uploadDate" type="date" />
@@ -278,16 +194,15 @@
       </div>
       <div class="note note--ok" id="uploadStatus" hidden>Ready.</div>
       <div class="note" id="uploadWarning" hidden></div>
-    </div>
-
-    <div class="card">
-      <h3 class="card__title">Expected Files</h3>
-      <ul class="list">
-        <li><strong>Rabies:</strong> region counts CSV; optional transform JSON; notes</li>
-        <li><strong>Double Injection:</strong> two region counts CSVs (A/B) + labels; optional transform JSON</li>
-        <li><strong>Regional AON:</strong> region counts CSV; subregion tag</li>
-        <li><strong>scRNA-seq PCA:</strong> counts (H5/H5AD/MTX), cell metadata, gene metadata, pipeline config</li>
-      </ul>
+      <div class="expected-note">
+        <p class="muted small"><strong>Expected files</strong></p>
+        <ul class="expected-list">
+          <li><span>Rabies Injection:</span> counts CSV; optional transform JSON; notes</li>
+          <li><span>Double Injection:</span> two counts CSVs (A/B) + labels; optional transform JSON</li>
+          <li><span>Subegional Injection:</span> counts CSV; subregion tag</li>
+          <li><span>scRNA-sequencing Data:</span> counts (H5/H5AD/MTX), cell metadata, gene metadata, pipeline config</li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>
