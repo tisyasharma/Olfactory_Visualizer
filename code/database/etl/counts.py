@@ -40,8 +40,12 @@ def ingest_counts(engine, unit_map, atlas_map, file_map, stats):
                 continue
 
             matched_key = None
+            root_base = os.path.basename(root)
+            file_lower = file.lower()
+            root_lower = root_base.lower()
             for key in SUBJECT_MAP.keys():
-                if key in file or key == os.path.basename(root):
+                key_lower = key.lower()
+                if key_lower in file_lower or key_lower == root_lower:
                     matched_key = key
                     break
             if not matched_key:

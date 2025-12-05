@@ -178,6 +178,50 @@ h2,h3,h4{ margin:6px 0 }
 .actions{ margin-top:16px; display:flex; gap:12px }
 .note{ margin-top:12px; padding:10px 12px; border-radius:12px; background:#fffbe6; color:#7c6d19; border:1px solid #f2e9a5; font-size:13px }
 .note--ok{ background:#e9fbf0; color:#14532d; border:1px solid #b0f0c5 }
+.note--error{ background:#fff1f2; color:#9f1239; border:1px solid #fecdd3; }
+.spinner{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+  color:#64748b;
+  font-size:13px;
+}
+.spinner[hidden]{ display:none !important; }
+.spinner__dot{
+  width:14px;
+  height:14px;
+  border:2px solid #cbd5e1;
+  border-top-color: var(--accent2);
+  border-radius:50%;
+  animation: spin 0.8s linear infinite;
+}
+.spinner--success{
+  color:#15803d;
+}
+.spinner--success .spinner__dot{
+  width:14px;
+  height:14px;
+  border:2px solid #bbf7d0;
+  border-top-color:#22c55e;
+  background:#22c55e;
+  animation:none;
+  position:relative;
+}
+.spinner--success .spinner__dot::after{
+  content:'✓';
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+}
+@keyframes spin{
+  to { transform: rotate(360deg); }
+}
 .pill{
   display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; background:var(--paper-alt); color:#475569; font-size:12px; border:1px solid var(--border);
 }

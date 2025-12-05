@@ -17,6 +17,8 @@ from datetime import datetime
 from pathlib import Path
 
 import dask.array as da
+import warnings
+from PIL import Image, ImageFile
 import imageio.v3 as iio
 import numpy as np
 import zarr
@@ -53,7 +55,13 @@ def file_sha256(path: Path, chunk_size: int = 1_048_576) -> str:
 
 
 def load_image(path: Path) -> np.ndarray:
-    arr = iio.imread(path)
+    # Allow large images but guard against pathological cases; suppress PIL warnings
+    Image.MAX_IMAGE_PIXELS = None
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=Image.DecompressionBombWarning)
+        arr = iio.imread(path)
+    # No hard cap; callers can downsample/tile manually if memory becomes an issue
     if arr.ndim == 2:
         arr = arr[np.newaxis, ...]
     elif arr.ndim == 3:
@@ -145,6 +153,11 @@ def ingest(subject: str, session: str, hemisphere: str, files: list[Path], pixel
             data = load_image(src)
             ensure_dataset_files()
             dest = BIDS_ROOT / subject / session / "microscopy" / f"{subject}_{session}_run-{idx:02d}_micr.ome.zarr"
+            # Clean up any stale store from prior attempts so the writer can proceed
+            if dest.exists():
+                shutil.rmtree(dest, ignore_errors=True)
+                sidecar_stale = dest.with_suffix(dest.suffix + ".json")
+                sidecar_stale.unlink(missing_ok=True)
             write_omezarr(data, dest, pixel_size_um)
             write_sidecar(dest, subject, session, idx, hemisphere, experiment_type, pixel_size_um)
             validate_outputs(dest)

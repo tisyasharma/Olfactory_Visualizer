@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Olfactory Data Visualizer</title>
-  <meta name="description" content="Interactive dashboard scaffolding for rabies tracing, double injections, and regional AON datasets." />
+  <!-- <meta name="description" content="Interactive dashboard scaffolding for rabies tracing, double injections, and regional AON datasets." /> -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,7 +42,7 @@
         <p class="kicker">Tisya Sharma · Capstone</p>
         <h1>Olfactory Data Visualizer</h1>
         <p class="lede">
-          Dashboard for fluorescence‑based circuit tracing and regional expression in the mouse anterior olfactory nucleus (AON).
+          Dashboard for fluorescence‑based circuit tracing. <!-- regional AON expression temporarily omitted -->
         </p>
         <div class="legend">
           <span class="dot" style="--c:var(--accent1)"></span> Afferent/Tracing
@@ -163,7 +163,7 @@
             <option value="" disabled selected>Select modality</option>
             <option value="rabies">Rabies Injection</option>
             <option value="double_injection">Double Injection</option>
-            <option value="regional_aon">Subregional Injection</option>
+            <!-- <option value="regional_aon">Subregional Injection</option> -->
             <option value="scrnaseq">RNA Sequencing Data</option>
           </select>
         </label>
@@ -213,6 +213,10 @@
         <button id="registerBtn" class="btn">Register Experiment</button>
         <button id="clearBtn" class="btn">Clear</button>
       </div>
+      <div id="uploadSpinner" class="spinner" hidden>
+        <span class="spinner__dot" aria-hidden="true"></span>
+        <span class="spinner__label">Uploading…</span>
+      </div>
       <div class="note note--ok" id="uploadStatus" hidden>Ready.</div>
       <div class="note" id="uploadWarning" hidden></div>
       <div class="expected-note">
@@ -220,7 +224,7 @@
         <ul class="expected-list">
           <li><span>Rabies Injection:</span> counts CSV; optional transform JSON; notes</li>
           <li><span>Double Injection:</span> two counts CSVs (A/B) + labels; optional transform JSON</li>
-          <li><span>Subegional Injection:</span> counts CSV; subregion tag</li>
+          <!-- <li><span>Subegional Injection:</span> counts CSV; subregion tag</li> -->
           <li><span>scRNA-sequencing Data:</span> counts (H5/H5AD/MTX), cell metadata, gene metadata, pipeline config</li>
         </ul>
       </div>

@@ -203,6 +203,7 @@ const csvInputBilateral = document.getElementById('csvInputBilateral');
 const csvInputLeft = document.getElementById('csvInputLeft');
 const csvInputRight = document.getElementById('csvInputRight');
 const csvList = document.getElementById('csvList');
+const uploadSpinner = document.getElementById('uploadSpinner');
 
 addImagesBtn?.addEventListener('click', () => fileInput?.click());
 fileInput?.addEventListener('change', (e) => addFiles([...e.target.files], 'image'));
@@ -356,10 +357,12 @@ function updateValueState(el){
 });
 
 registerBtn?.addEventListener('click', async () => {
+  hideSpinner();
   const modality = uploadModality?.value;
   const mouse = (uploadMouse?.value || '').trim();
-  if(!modality || !mouse){
-    setWarning('Please choose a modality and provide a Mouse ID.');
+  const dateVal = (uploadDate?.value || '').trim();
+  if(!modality || !mouse || !dateVal){
+    setWarning('Please choose a modality, provide a Mouse ID, and select a date.');
     return;
   }
   const hasImages = imageQueue.length > 0;
@@ -368,8 +371,12 @@ registerBtn?.addEventListener('click', async () => {
     setWarning('Assign all quantification CSVs to bilateral/ipsilateral/contralateral before submitting.');
     return;
   }
-  if(!hasImages || totalCsv === 0){
-    setWarning('Add image slices and quantification CSVs (bilateral/ipsilateral/contralateral) before submitting.');
+  if(!hasImages){
+    setWarning('Please add microscopy images before submitting.');
+    return;
+  }
+  if(countsQueues.bilateral.length === 0 || countsQueues.left.length === 0 || countsQueues.right.length === 0){
+    setWarning('Add all three quantification files: bilateral, ipsilateral, and contralateral.');
     return;
   }
   const hemiVal = lateralitySelect?.value;
@@ -392,6 +399,7 @@ registerBtn?.addEventListener('click', async () => {
   }
 
   try{
+    showSpinner('Uploading…');
     if(imageFiles.length){
       await uploadMicroscopy(modality, mouse, sessionId, hemisphere, imageFiles);
     }
@@ -409,20 +417,63 @@ registerBtn?.addEventListener('click', async () => {
     loadSubjects();
     loadSamples();
     loadFiles();
+    // Show a brief success indicator
+    if(uploadSpinner){
+      uploadSpinner.classList.add('spinner--success');
+      const textEl = uploadSpinner.querySelector('.spinner__label');
+      if(textEl){ textEl.textContent = 'Uploaded'; }
+      const dot = uploadSpinner.querySelector('.spinner__dot');
+      if(dot){ dot.style.animation = 'none'; }
+    }
   }catch(err){
     console.error(err);
     setWarning('Upload failed: ' + err.message);
+  }finally{
+    hideSpinner();
   }
 });
 
 function setStatus(msg){
   if(uploadStatus){ uploadStatus.textContent = msg; uploadStatus.hidden = false; }
-  if(uploadWarning){ uploadWarning.hidden = true; }
+  if(uploadWarning){
+    uploadWarning.hidden = true;
+    uploadWarning.textContent = '';
+    uploadWarning.classList.remove('note--error');
+  }
 }
 function setWarning(msg){
-  if(!msg){ uploadWarning.hidden = true; return; }
-    if(uploadWarning){ uploadWarning.textContent = msg; uploadWarning.hidden = false; }
-    if(uploadStatus){ uploadStatus.hidden = true; }
+  if(!msg){
+    if(uploadWarning){
+      uploadWarning.hidden = true;
+      uploadWarning.textContent = '';
+      uploadWarning.classList.remove('note--error');
+    }
+    return;
+  }
+  if(uploadWarning){
+    uploadWarning.textContent = msg;
+    uploadWarning.hidden = false;
+    uploadWarning.classList.remove('note--ok');
+    uploadWarning.classList.add('note--error');
+    uploadWarning.style.display = 'block';
+  }
+  if(uploadStatus){ uploadStatus.hidden = true; }
+}
+
+function showSpinner(label){
+  if(!uploadSpinner) return;
+  uploadSpinner.classList.remove('spinner--success');
+  const textEl = uploadSpinner.querySelector('.spinner__label');
+  if(textEl){ textEl.textContent = label || 'Uploading…'; }
+  uploadSpinner.hidden = false;
+}
+function hideSpinner(){
+  if(uploadSpinner){
+    uploadSpinner.hidden = true;
+    const textEl = uploadSpinner.querySelector('.spinner__label');
+    if(textEl){ textEl.textContent = 'Uploading…'; }
+    uploadSpinner.classList.remove('spinner--success');
+  }
 }
 
 function updateReadyStates(){
@@ -459,8 +510,14 @@ async function uploadMicroscopy(modality, mouse, sessionId, hemisphere, files){
     body: form
   });
   if(!res.ok){
-    const t = await res.text();
-    throw new Error(t || 'Upload failed');
+    const text = await res.text();
+    let msg = text;
+    try{ const parsed = JSON.parse(text); if(parsed?.detail){ msg = parsed.detail; } }catch(_){}
+    if(res.status === 409){
+      setWarning(`Upload failed: files already exist in the system. (${msg || 'Microscopy duplicate detected'})`);
+      return { status:'skipped', message: msg };
+    }
+    throw new Error(msg || 'Upload failed');
   }
   const data = await res.json();
   setStatus(`Uploaded ${files.length} microscopy file(s) for ${subj} -> ${sessionId}`);
@@ -487,6 +544,7 @@ function resetUploadForm(){
   if(csvInputRight){ csvInputRight.value = ''; }
   setWarning('');
   if(uploadStatus){ uploadStatus.hidden = true; uploadStatus.textContent = ''; }
+  hideSpinner();
 }
 
 async function uploadRegionCounts(experimentType, mouse, sessionId, hemisphere, files){
@@ -513,11 +571,21 @@ async function uploadRegionCounts(experimentType, mouse, sessionId, hemisphere, 
     body: form
   });
   if(!res.ok){
-    const t = await res.text();
-    throw new Error(t || 'Upload failed');
+    const text = await res.text();
+    let msg = text;
+    try{ const parsed = JSON.parse(text); if(parsed?.detail){ msg = parsed.detail; } }catch(_){}
+    if(res.status === 409){
+      setWarning(`Upload failed: files already exist in the system. (${msg || 'Quantification duplicate detected'})`);
+      return { status:'skipped', message: msg };
+    }
+    throw new Error(msg || 'Upload failed');
   }
   const data = await res.json();
-  setStatus(`Ingested ${data.rows_ingested || 0} row(s) from ${files.length} CSV(s) for ${subj}`);
+  if((data.rows_ingested || 0) === 0){
+    setWarning('No rows ingested (possible duplicate content).');
+  }else{
+    setStatus(`Ingested ${data.rows_ingested || 0} row(s) from ${files.length} CSV(s) for ${subj}`);
+  }
   return data;
 }
 
